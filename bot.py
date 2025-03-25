@@ -7,17 +7,17 @@ bot = telebot.TeleBot(TOKEN)
 
 app = Flask(__name__)
 
-@app.route('/' + TOKEN, methods=['POST'])
+@app.route('/', methods=['POST'])
 def getMessage():
     json_str = request.get_data().decode('UTF-8')
     update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
-    return '!', 200
+    return 'OK', 200
 
 @app.route('/')
 def webhook():
     bot.remove_webhook()
-    bot.set_webhook(url=f"https://{os.getenv('RENDER_APP_URL')}/{TOKEN}")
+    bot.set_webhook(url=os.getenv('RENDER_APP_URL'))  # Виправлено
     return 'Webhook set', 200
 
 @bot.message_handler(commands=['start'])
