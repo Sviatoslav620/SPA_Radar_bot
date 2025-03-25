@@ -7,114 +7,90 @@ from flask import Flask, request
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+from itertools import cycle
 
-# Отримання даних з Environment Variables
+# Налаштування змінних середовища
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-RENDER_APP_URL = os.getenv("RENDER_APP_URL")
-PORT = int(os.getenv("PORT", 5000))
-CHAT_ID = "@Sviatoslav_Poliakov"  # ID твого Телеграму
-
-bot = telebot.TeleBot(TOKEN)
-app = Flask(__name__)
-
-# Список українських міст (щоб шукати локацію)
-UKRAINE_CITIES = ["Київ", "Львів", "Одеса", "Дніпро", "Харків", "Запоріжжя", "Вінниця", "Чернігів"]
-
-# Хештеги для пошуку
-HASHTAGS = [
-    "спа", "spa", "сауна", "баня", "хамам", "hamam", "sauna", "солянакімната", "saltroom",
-    "wellness", "велнес", "візуалізація", "3d", "рендер", "render", "visualization",
-    "projectvisualization", "інтерєр", "design", "spacomplex", "spadesign", "saunadesign",
-    "spadesigner", "spaproject", "hamamdesign"
-]
-
-# Проксі-сервери (випадковий вибір)
+CHAT_ID = "@Sviatoslav_Poliakov"
 PROXIES = [
     "190.71.174.227:999",
     "43.201.110.79:3128",
     "43.153.119.231:13001",
     "43.153.100.212:13001"
 ]
+proxy_pool = cycle(PROXIES)
 
-def get_proxy():
-    """Функція вибору випадкового проксі."""
-    return random.choice(PROXIES)
+# Telegram бот
+bot = telebot.TeleBot(TOKEN)
+app = Flask(__name__)
 
-def scrape_instagram():
-    """Парсинг постів в Instagram із Selenium."""
-    driver = None  # Глобально ініціалізуємо driver, щоб уникнути помилки
-
-    try:
-        # Налаштування проксі
-        proxy = get_proxy()
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument("--headless")  # Запуск без графічного інтерфейсу
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument(f"--proxy-server=http://{proxy}")
-
-        # Запускаємо WebDriver
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-
-        # Перебираємо хештеги
-        for tag in HASHTAGS:
-            url = f"https://www.instagram.com/explore/tags/{tag}/"
-            driver.get(url)
-            time.sleep(5)  # Чекаємо, поки сторінка завантажиться
-
-            posts = driver.find_elements(By.XPATH, "//a[contains(@href, '/p/')]")[:5]  # Беремо перші 5 постів
-            for post in posts:
-                link = post.get_attribute("href")
-
-                # Шукаємо місто в описі
-                description = post.text.lower()
-                location = next((city for city in UKRAINE_CITIES if city.lower() in description), "Невідоме місто")
-
-                # Надсилаємо повідомлення в Телеграм
-                bot.send_message(CHAT_ID, f"📢 Новий пост з тегом #{tag}\n📍 Локація: {location}\n🔗 Посилання: {link}")
-        
-        return "Парсинг завершено!", 200
-
-    except Exception as e:
-        print(f"❌ Помилка парсингу: {e}")
-        bot.send_message(CHAT_ID, f"⚠️ ПОМИЛКА ПРИ ПАРСИНГУ: {e}")
-
-    finally:
-        if driver:
-            driver.quit()  # Закриваємо WebDriver
+# Функція для налаштування Webhook
+@app.route('/')
+def set_webhook():
+    bot.remove_webhook()
+    bot.set_webhook(url=f"{os.getenv('RENDER_APP_URL')}/{TOKEN}")
+    return 'Webhook set', 200
 
 @app.route('/' + TOKEN, methods=['POST'])
-def getMessage():
-    """Обробка оновлень від Telegram API."""
+def get_message():
     json_str = request.get_data().decode('UTF-8')
     update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
     return '!', 200
 
-@app.route('/')
-def webhook():
-    """Перевстановлення Webhook для Telegram."""
-    bot.remove_webhook()
-    bot.set_webhook(url=f"https://{RENDER_APP_URL}/{TOKEN}")
-    return 'Webhook set', 200
+# Функція для отримання драйвера з проксі
 
+def get_driver():
+    proxy = next(proxy_pool)
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument(f"--proxy-server=http://{proxy}")
+    
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
+    return driver, proxy
+
+# Хештеги та міста
+HASHTAGS = [
+    "#спа", "#spa", "#сауна", "#баня", "#хамам", "#hamam", "#sauna", "#солянакімната", "#saltroom",
+    "#wellness", "#велнес", "#візуалізація", "#3d", "#рендер", "#render", "#visualization",
+    "#projectvisualization", "#інтерєр", "#design", "#spacomplex", "#spadesign", "#saunadesign",
+    "#spadesigner", "#spaproject", "#hamamdesign"
+]
+
+CITIES = ["Київ", "Львів", "Одеса", "Харків", "Дніпро", "Запоріжжя"]
+
+# Функція для парсингу Instagram
+
+def scrape_instagram():
+    driver, proxy = get_driver()
+    try:
+        for hashtag in HASHTAGS:
+            url = f"https://www.instagram.com/explore/tags/{hashtag.strip('#')}"  
+            driver.get(url)
+            time.sleep(random.randint(5, 10))
+            
+            posts = driver.find_elements(By.CSS_SELECTOR, "article div div div div a")
+            for post in posts[:5]:
+                link = post.get_attribute("href")
+                bot.send_message(CHAT_ID, f"🔍 Знайдено новий пост: {link}")
+                time.sleep(random.randint(2, 5))
+    
+    except Exception as e:
+        bot.send_message(CHAT_ID, f"⚠️ Помилка під час парсингу: {e}\nСпробую інший проксі: {proxy}")
+    finally:
+        driver.quit()
+
+# Обробник команд
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    """Привітальне повідомлення."""
-    bot.reply_to(message, "✅ Бот підключений! Я буду відслідковувати нові спа-проекти в Україні.")
+    bot.reply_to(message, "✅ Бот запущений! Очікуйте повідомлення про нові спа-проєкти.")
 
-@bot.message_handler(commands=['check'])
-def check_instagram(message):
-    """Команда для ручного запуску парсингу."""
-    bot.reply_to(message, "🔍 Починаю пошук нових спа-проєктів...")
-    scrape_instagram()
-
-@bot.message_handler(func=lambda message: True)
-def echo_all(message):
-    """Відповідає на будь-яке повідомлення."""
-    bot.reply_to(message, "Я отримав твоє повідомлення! 🤖")
-
+# Запуск Flask-сервера
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
