@@ -2,3 +2,4 @@ flask
 pyTelegramBotAPI
 gunicorn
 selenium
+webdriver-manager
