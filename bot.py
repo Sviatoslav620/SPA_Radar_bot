@@ -53,12 +53,14 @@ def save_users(users):
 users = load_users()
 
 # Налаштування Selenium
+# Налаштування Selenium
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.binary_location = "/usr/bin/google-chrome"  # Вказуємо шлях до Chrome
 
-service = Service("/opt/render/project/src/chromedriver")
+service = Service("/usr/local/bin/chromedriver")
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
 # Маршрути Flask
