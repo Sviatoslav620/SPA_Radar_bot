@@ -10,6 +10,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from webdriver_manager.chrome import ChromeDriverManager
 
 # Логування для налагодження
 logging.basicConfig(level=logging.INFO)
@@ -51,14 +52,18 @@ def save_users(users):
 
 users = load_users()
 
-# Налаштування Selenium для Chrome в Render
+# Налаштування Selenium
 chrome_options = Options()
-chrome_options.add_argument("--headless")
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.binary_location = "/tmp/chrome/usr/bin/google-chrome"  # Вказуємо шлях до Chrome
+chrome_options.add_argument("--headless")  # Запуск без GUI
+chrome_options.add_argument("--disable-gpu")  # Вимкнення GPU
+chrome_options.add_argument("--no-sandbox")  # Запуск у контейнері
+chrome_options.add_argument("--disable-dev-shm-usage")  # Уникнення проблем з пам’яттю
+chrome_options.add_argument("--remote-debugging-port=9222")  # Менше споживання ресурсів
+chrome_options.add_argument("--disable-software-rasterizer")  # Вимкнення зайвих процесів
+chrome_options.add_argument("--single-process")  # Запуск в одному процесі
+chrome_options.binary_location = "/usr/bin/google-chrome"
 
-service = Service("/tmp/chromedriver")
+service = Service("/usr/local/bin/chromedriver")
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
 # Маршрути Flask
@@ -117,7 +122,7 @@ def scrape_instagram():
 def check_new_posts():
     while True:
         scrape_instagram()
-        time.sleep(1800)  # Чекати 30 хвилин перед наступною перевіркою
+        time.sleep(3600)  # Чекати 1 годину перед наступною перевіркою
 
 # Запуск сервера
 if __name__ == "__main__":
