@@ -8,9 +8,9 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 
-# Завантажуємо змінні середовища
+# Отримання змінних середовища
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-RENDER_APP_URL = os.getenv("RENDER_APP_URL")
+RENDER_APP_URL = "https://spa-radar-bot.onrender.com"
 CHAT_ID = "@Sviatoslav_Poliakov"
 
 bot = telebot.TeleBot(TOKEN)
@@ -40,13 +40,12 @@ def get_driver():
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-
+    
     # Використовуємо проксі
     proxy = PROXIES.pop(0)  # Беремо перший проксі
     PROXIES.append(proxy)  # Переміщаємо в кінець черги
-    chrome_options.add_argument(f'--proxy-server={proxy}')
-
-    # Запускаємо WebDriver
+    chrome_options.add_argument(f'--proxy-server=http://{proxy}')
+    
     service = Service(ChromeDriverManager().install())
     return webdriver.Chrome(service=service, options=chrome_options)
 
@@ -57,13 +56,13 @@ def scrape_instagram():
         driver.get("https://www.instagram.com/explore/tags/spa/")  # Приклад для парсингу за хештегом
         
         time.sleep(5)  # Чекаємо завантаження сторінки
-
+        
         posts = driver.find_elements("css selector", "article a")  # Пошук публікацій
-
+        
         for post in posts[:5]:  # Беремо перші 5 постів
             link = post.get_attribute("href")
             bot.send_message(CHAT_ID, f"🔍 Знайдено новий пост: {link}")
-
+        
         driver.quit()
     except Exception as e:
         bot.send_message(CHAT_ID, f"⚠️ Помилка під час парсингу: {e}")
@@ -79,7 +78,7 @@ def getMessage():
 @app.route('/')
 def webhook():
     bot.remove_webhook()
-    bot.set_webhook(url=f"https://spa-radar-bot.onrender.com/{TOKEN}")
+    bot.set_webhook(url=f"{RENDER_APP_URL}/{TOKEN}")
     return 'Webhook set', 200
 
 # Обробник команди /start
@@ -98,4 +97,5 @@ if __name__ == "__main__":
     check_if_banned()
     scrape_instagram()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+
 
