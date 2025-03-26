@@ -10,7 +10,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from webdriver_manager.chrome import ChromeDriverManager
 
 # Логування для налагодження
 logging.basicConfig(level=logging.INFO)
@@ -52,15 +51,14 @@ def save_users(users):
 
 users = load_users()
 
-# Налаштування Selenium
-# Налаштування Selenium
+# Налаштування Selenium для Chrome в Render
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.binary_location = "/usr/bin/google-chrome"  # Вказуємо шлях до Chrome
+chrome_options.binary_location = "/tmp/chrome/usr/bin/google-chrome"  # Вказуємо шлях до Chrome
 
-service = Service("/usr/local/bin/chromedriver")
+service = Service("/tmp/chromedriver")
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
 # Маршрути Flask
