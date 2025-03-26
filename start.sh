@@ -21,6 +21,12 @@ unzip /tmp/chromedriver.zip -d /usr/local/bin/
 rm /tmp/chromedriver.zip
 chmod +x /usr/local/bin/chromedriver
 
+echo "🛠 Перевірка встановленого ChromeDriver..."
+if [ ! -f "/usr/local/bin/chromedriver" ]; then
+    echo "❌ ПОМИЛКА: ChromeDriver не було встановлено!"
+    exit 1
+fi
+
 echo "🐍 Встановлення Python-залежностей..."
 pip install --no-cache-dir -r requirements.txt
 
