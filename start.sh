@@ -1,35 +1,28 @@
 #!/bin/bash
 
-# Оновлення списку пакетів та встановлення необхідних утиліт
-apt-get update && apt-get install -y wget unzip curl
+echo "🔄 Оновлення списку пакетів..."
+apt-get update 
 
-# Встановлення Google Chrome
-echo "📥 Завантаження та встановлення Google Chrome..."
+echo "📦 Встановлення залежностей..."
+apt-get install -y wget unzip curl
+
+echo "🌍 Завантаження та встановлення Google Chrome..."
 wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-dpkg -i /tmp/chrome.deb || apt-get -f install -y
+dpkg -i /tmp/chrome.deb || apt-get install -fy
 rm /tmp/chrome.deb
 
-# Отримання версії Chrome
-CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
-echo "🚀 Встановлена версія Chrome: $CHROME_VERSION"
-
-# Завантаження відповідного ChromeDriver
 echo "📥 Завантаження ChromeDriver..."
-CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
-wget -q -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip
+CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d'.' -f1)
+CHROMEDRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION)
+wget -q -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
 
-# Розпакування ChromeDriver у кореневу папку проекту
-unzip /tmp/chromedriver.zip -d /opt/render/project/src/
+echo "📂 Розпакування ChromeDriver..."
+unzip /tmp/chromedriver.zip -d /usr/local/bin/
 rm /tmp/chromedriver.zip
+chmod +x /usr/local/bin/chromedriver
 
-# Надаємо права на виконання
-chmod +x /opt/render/project/src/chromedriver
+echo "🐍 Встановлення Python-залежностей..."
+pip install --no-cache-dir -r requirements.txt
 
-# Перевірка встановлення
-echo "✅ Перевірка встановлення:"
-google-chrome --version
-/opt/render/project/src/chromedriver --version
-
-# Запуск бота
 echo "🚀 Запуск бота..."
 python bot.py
