@@ -1,22 +1,25 @@
 #!/bin/bash
 
-echo "📥 Завантаження Google Chrome..."
-wget -q -O /tmp/chrome.tar.gz https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-mkdir -p /opt/chrome
-tar -xzf /tmp/chrome.tar.gz -C /opt/chrome
-rm /tmp/chrome.tar.gz
+echo "📥 Завантаження Portable Google Chrome..."
+wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+dpkg -x /tmp/chrome.deb /tmp/chrome
+rm /tmp/chrome.deb
 
 echo "📥 Завантаження ChromeDriver..."
 CHROMEDRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
 wget -q -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
 
 echo "📂 Розпакування ChromeDriver..."
-unzip /tmp/chromedriver.zip -d /opt/chrome/
+unzip /tmp/chromedriver.zip -d /tmp/
 rm /tmp/chromedriver.zip
-chmod +x /opt/chrome/chromedriver
+chmod +x /tmp/chromedriver
+
+echo "🔧 Додавання Chrome в PATH..."
+export PATH="/tmp/chrome/usr/bin:$PATH"
+export PATH="/tmp:$PATH"
 
 echo "🛠 Перевірка встановленого ChromeDriver..."
-if [ ! -f "/opt/chrome/chromedriver" ]; then
+if [ ! -f "/tmp/chromedriver" ]; then
     echo "❌ ПОМИЛКА: ChromeDriver не було встановлено!"
     exit 1
 fi
