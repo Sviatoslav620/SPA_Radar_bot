@@ -1,113 +1,124 @@
 import os
 import json
 import time
+import logging
 import random
 import telebot
 from flask import Flask, request
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # Отримуємо токен з перемінних середовища
+# Логування для налагодження
+logging.basicConfig(level=logging.INFO)
+
+# Завантаження змінних середовища
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+WEBHOOK_URL = f"https://spa-radar-bot.onrender.com/{TOKEN}"
+PORT = int(os.getenv("PORT", 5000))
+
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-USERS_FILE = "users.json"
-PROXIES = [
-    "190.71.174.227:999",
-    "43.201.110.79:3128",
-    "43.153.119.231:13001",
-    "43.153.100.212:13001"
-]
+# Файл для збереження користувачів
+USERS_FILE = "instance/users.json"
 
+# Перелік хештегів для моніторингу
 HASHTAGS = [
-    "спа", "spa", "сауна", "баня", "хамам", "hamam", "sauna", "солянакімната", "saltroom",
-    "wellness", "велнес", "візуалізація", "3d", "рендер", "render", "visualization", "projectvisualization",
-    "інтерєр", "design", "spacomplex", "spadesign", "saunadesign", "spadesigner", "spaproject", "hamamdesign"
+    "#спа", "#spa", "#сауна", "#баня", "#хамам", "#hamam", "#sauna", "#солянакімната",
+    "#saltroom", "#wellness", "#велнес", "#візуалізація", "#3d", "#рендер", "#render",
+    "#visualization", "#projectvisualization", "#інтерєр", "#design", "#spacomplex",
+    "#spadesign", "#saunadesign", "#spadesigner", "#spaproject", "#hamamdesign"
 ]
 
+# Створення директорії, якщо її немає
+if not os.path.exists("instance"):
+    os.makedirs("instance")
 
+# Завантаження списку користувачів
 def load_users():
     if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, "r") as f:
-            return json.load(f)
+        with open(USERS_FILE, "r") as file:
+            return json.load(file)
     return []
 
-
+# Збереження списку користувачів
 def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f)
+    with open(USERS_FILE, "w") as file:
+        json.dump(users, file)
 
+users = load_users()
 
-def send_message_to_all_users(text):
-    users = load_users()
-    for user_id in users:
-        try:
-            bot.send_message(user_id, text)
-        except Exception as e:
-            print(f"Помилка надсилання повідомлення {user_id}: {e}")
+# Налаштування Selenium
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
 
+service = Service("/opt/render/project/src/chromedriver")
+driver = webdriver.Chrome(service=service, options=chrome_options)
 
-def get_random_proxy():
-    return random.choice(PROXIES)
-
-
-def scrape_instagram():
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument(f"--proxy-server={get_random_proxy()}")
-    
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
-    
-    try:
-        driver.get("https://www.instagram.com/explore/tags/spa/")
-        time.sleep(5)
-        posts = driver.find_elements(By.CSS_SELECTOR, "article div a")
-        for post in posts[:5]:
-            link = post.get_attribute("href")
-            send_message_to_all_users(f"🔔 Знайдено новий пост: {link}")
-    except Exception as e:
-        print(f"Помилка парсингу Instagram: {e}")
-    finally:
-        driver.quit()
-
-
+# Маршрути Flask
 @app.route('/' + TOKEN, methods=['POST'])
-def getMessage():
+def webhook():
     json_str = request.get_data().decode('UTF-8')
     update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
     return '!', 200
 
-
-@app.route('/')
-def webhook():
+@app.route("/")
+def set_webhook():
     bot.remove_webhook()
-    bot.set_webhook(url=f"https://spa-radar-bot.onrender.com/{TOKEN}")
+    bot.set_webhook(url=WEBHOOK_URL)
     return 'Webhook set', 200
 
-
+# Обробник команди /start
 @bot.message_handler(commands=['start'])
-def send_welcome(message):
-    users = load_users()
+def start(message):
     user_id = message.chat.id
+
     if user_id not in users:
         users.append(user_id)
         save_users(users)
-    bot.reply_to(message, "✅ Зв’язок встановлено!\nВи успішно підключені до системи SpaRadarUA.\nОчікуйте повідомлення про нові спа-проєкти.")
 
+    bot.send_message(user_id, "✅ Вітаю! Ти підписався на оновлення про SPA, сауни та релакс-зони в Україні!")
 
-@bot.message_handler(commands=['check'])
-def check_instagram(message):
-    bot.reply_to(message, "🔍 Шукаю нові пости...")
-    scrape_instagram()
-    bot.reply_to(message, "✅ Оновлення завершено!")
+# Функція парсингу постів з Instagram
+def scrape_instagram():
+    global users
+    try:
+        logging.info("🔍 Перевіряємо Instagram...")
+        driver.get("https://www.instagram.com/explore/tags/spa/")
+        time.sleep(random.randint(3, 6))  # Час очікування, щоб зменшити ризик блокування
 
+        posts = driver.find_elements(By.XPATH, "//article//a")
+        found_posts = []
 
+        for post in posts[:5]:  # Перевіряємо перші 5 постів
+            link = post.get_attribute("href")
+            if any(tag in link for tag in HASHTAGS):
+                found_posts.append(link)
+
+        if found_posts:
+            message = "🆕 Нові пости з Instagram:\n" + "\n".join(found_posts)
+            for user_id in users:
+                try:
+                    bot.send_message(user_id, message)
+                except Exception as e:
+                    logging.error(f"Не вдалося відправити повідомлення {user_id}: {e}")
+
+    except Exception as e:
+        logging.error(f"Помилка при парсингу: {e}")
+
+# Функція періодичної перевірки постів
+def check_new_posts():
+    while True:
+        scrape_instagram()
+        time.sleep(1800)  # Чекати 30 хвилин перед наступною перевіркою
+
+# Запуск сервера
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+    app.run(host="0.0.0.0", port=PORT)
