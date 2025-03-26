@@ -30,7 +30,7 @@ app = Flask(__name__)
 @app.route('/')
 def set_webhook():
     bot.remove_webhook()
-    bot.set_webhook(url=f"{os.getenv('RENDER_APP_URL')}/{TOKEN}")
+    bot.set_webhook(url=f"https://spa-radar-bot.onrender.com/{TOKEN}")
     return 'Webhook set', 200
 
 @app.route('/' + TOKEN, methods=['POST'])
