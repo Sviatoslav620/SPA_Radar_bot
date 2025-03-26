@@ -6,8 +6,10 @@ import random
 import telebot
 from flask import Flask, request
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 
 # Логування для налагодження
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +25,7 @@ app = Flask(__name__)
 # Файл для збереження користувачів
 USERS_FILE = "instance/users.json"
 
-# Хештеги для моніторингу
+# Перелік хештегів для моніторингу
 HASHTAGS = [
     "#спа", "#spa", "#сауна", "#баня", "#хамам", "#hamam", "#sauna", "#солянакімната",
     "#saltroom", "#wellness", "#велнес", "#візуалізація", "#3d", "#рендер", "#render",
@@ -49,17 +51,15 @@ def save_users(users):
 
 users = load_users()
 
-# Налаштування Selenium
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # Запуск без GUI
-chrome_options.add_argument("--disable-gpu")  # Вимкнення GPU
-chrome_options.add_argument("--no-sandbox")  # Запуск у контейнері
-chrome_options.add_argument("--disable-dev-shm-usage")  # Менше споживання пам'яті
-chrome_options.add_argument("--remote-debugging-port=9222")
-chrome_options.binary_location = "/usr/bin/google-chrome"
+# Налаштування Selenium (під Firefox)
+firefox_options = Options()
+firefox_options.add_argument("--headless")
+firefox_options.add_argument("--no-sandbox")
+firefox_options.add_argument("--disable-dev-shm-usage")  # Мінімізація використання RAM
+firefox_options.binary_location = "/tmp/firefox/firefox/firefox"  # Шлях до Firefox
 
-service = Service("/usr/local/bin/chromedriver")
-driver = webdriver.Chrome(service=service, options=chrome_options)
+service = Service("/tmp/firefox/geckodriver")  # Geckodriver у тій самій папці
+driver = webdriver.Firefox(service=service, options=firefox_options)
 
 # Маршрути Flask
 @app.route('/' + TOKEN, methods=['POST'])
@@ -117,7 +117,7 @@ def scrape_instagram():
 def check_new_posts():
     while True:
         scrape_instagram()
-        time.sleep(3600)  # Чекати 1 годину перед наступною перевіркою
+        time.sleep(1800)  # Чекати 30 хвилин перед наступною перевіркою
 
 # Запуск сервера
 if __name__ == "__main__":
