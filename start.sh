@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "📥 Завантаження Portable Google Chrome..."
+echo "📥 Завантаження Headless Chrome..."
 wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 dpkg -x /tmp/chrome.deb /tmp/chrome
 rm /tmp/chrome.deb
@@ -17,12 +17,6 @@ chmod +x /tmp/chromedriver
 echo "🔧 Додавання Chrome в PATH..."
 export PATH="/tmp/chrome/usr/bin:$PATH"
 export PATH="/tmp:$PATH"
-
-echo "🛠 Перевірка встановленого ChromeDriver..."
-if [ ! -f "/tmp/chromedriver" ]; then
-    echo "❌ ПОМИЛКА: ChromeDriver не було встановлено!"
-    exit 1
-fi
 
 echo "🐍 Встановлення Python-залежностей..."
 pip install --no-cache-dir -r requirements.txt
