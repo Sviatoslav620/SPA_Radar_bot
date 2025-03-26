@@ -1,18 +1,23 @@
 #!/bin/bash
 
-# Завантаження Chrome
-apt-get update
-apt-get install -y wget unzip
-wget -q -O chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-apt-get install -y ./chrome.deb
+# Надати файлу start.sh права на виконання
+chmod +x start.sh
+
+# Завантажуємо Chrome
+echo "Downloading Chrome..."
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O chrome.deb
+sudo dpkg -i chrome.deb || sudo apt-get -f install -y
 rm chrome.deb
 
-# Завантаження ChromeDriver (під версію Chrome)
-CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
-CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
-wget -q -O chromedriver.zip "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
-unzip chromedriver.zip -d /usr/local/bin/
-rm chromedriver.zip
+# Завантажуємо ChromeDriver
+echo "Downloading ChromeDriver..."
+CHROMEDRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE)
+wget https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
+unzip chromedriver_linux64.zip
+chmod +x chromedriver
+sudo mv chromedriver /usr/local/bin/
+rm chromedriver_linux64.zip
 
-# Запуск бота
-python3 bot.py
+# Запускаємо бота
+echo "Starting bot..."
+python bot.py
