@@ -1,41 +1,41 @@
 #!/bin/bash
 
-# Оновлення та встановлення утиліт
+# Оновлення пакетів
 apt-get update
 apt-get install -y wget tar unzip curl jq
 
+# Створюємо робочі директорії в домашній папці
+mkdir -p ~/firefox
+mkdir -p ~/geckodriver
+
 # Встановлення Firefox
 echo "🔵 Завантаження та встановлення Firefox..."
-wget -O /tmp/firefox.tar.bz2 "https://download.mozilla.org/?product=firefox-latest&os=linux64&lang=en-US"
-mkdir -p /opt/firefox
-tar -xjf /tmp/firefox.tar.bz2 -C /opt/firefox
-rm /tmp/firefox.tar.bz2
-ln -sf /opt/firefox/firefox /usr/local/bin/firefox
+wget -O ~/firefox/firefox.tar.bz2 "https://download.mozilla.org/?product=firefox-latest&os=linux64&lang=en-US"
+tar -xjf ~/firefox/firefox.tar.bz2 -C ~/firefox
+rm ~/firefox/firefox.tar.bz2
+
+# Додаємо Firefox у PATH
+export PATH=$HOME/firefox:$PATH
 
 # Встановлення GeckoDriver
 echo "🟢 Завантаження та встановлення GeckoDriver..."
-GECKODRIVER_VERSION=$(curl -sS https://api.github.com/repos/mozilla/geckodriver/releases/latest | jq -r ".tag_name" | sed 's/v//')
-wget -O /tmp/geckodriver.tar.gz "https://github.com/mozilla/geckodriver/releases/download/v${GECKODRIVER_VERSION}/geckodriver-linux64.tar.gz"
+GECKODRIVER_VERSION="0.33.0"
+wget -O ~/geckodriver/geckodriver.tar.gz "https://github.com/mozilla/geckodriver/releases/download/v${GECKODRIVER_VERSION}/geckodriver-linux64.tar.gz"
 
-# Перевірка, чи файл існує
-if [ ! -f "/tmp/geckodriver.tar.gz" ]; then
+# Перевіряємо, чи файл існує
+if [ ! -f "~/geckodriver/geckodriver.tar.gz" ]; then
     echo "❌ Помилка: Файл geckodriver.tar.gz не завантажився!"
     exit 1
 fi
 
-mkdir -p /opt/geckodriver
-tar -xzf /tmp/geckodriver.tar.gz -C /opt/geckodriver
-rm /tmp/geckodriver.tar.gz
-chmod +x /opt/geckodriver/geckodriver
-ln -sf /opt/geckodriver/geckodriver /usr/local/bin/geckodriver
+tar -xzf ~/geckodriver/geckodriver.tar.gz -C ~/geckodriver
+rm ~/geckodriver/geckodriver.tar.gz
+chmod +x ~/geckodriver/geckodriver
 
-# Перевірка, чи geckodriver встановився
-if [ ! -f "/usr/local/bin/geckodriver" ]; then
-    echo "❌ Помилка: geckodriver не знайдено у /usr/local/bin!"
-    exit 1
-fi
+# Додаємо GeckoDriver у PATH
+export PATH=$HOME/geckodriver:$PATH
 
-# Перевірка версії
+# Перевірка версій
 echo "✅ Firefox версія:"
 firefox --version || echo "❌ Firefox не знайдено!"
 echo "✅ GeckoDriver версія:"
