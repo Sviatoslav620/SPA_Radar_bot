@@ -8,9 +8,6 @@ from flask import Flask, request
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from webdriver_manager.chrome import ChromeDriverManager
 
 # Логування для налагодження
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +23,7 @@ app = Flask(__name__)
 # Файл для збереження користувачів
 USERS_FILE = "instance/users.json"
 
-# Перелік хештегів для моніторингу
+# Хештеги для моніторингу
 HASHTAGS = [
     "#спа", "#spa", "#сауна", "#баня", "#хамам", "#hamam", "#sauna", "#солянакімната",
     "#saltroom", "#wellness", "#велнес", "#візуалізація", "#3d", "#рендер", "#render",
@@ -57,10 +54,8 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")  # Запуск без GUI
 chrome_options.add_argument("--disable-gpu")  # Вимкнення GPU
 chrome_options.add_argument("--no-sandbox")  # Запуск у контейнері
-chrome_options.add_argument("--disable-dev-shm-usage")  # Уникнення проблем з пам’яттю
-chrome_options.add_argument("--remote-debugging-port=9222")  # Менше споживання ресурсів
-chrome_options.add_argument("--disable-software-rasterizer")  # Вимкнення зайвих процесів
-chrome_options.add_argument("--single-process")  # Запуск в одному процесі
+chrome_options.add_argument("--disable-dev-shm-usage")  # Менше споживання пам'яті
+chrome_options.add_argument("--remote-debugging-port=9222")
 chrome_options.binary_location = "/usr/bin/google-chrome"
 
 service = Service("/usr/local/bin/chromedriver")
