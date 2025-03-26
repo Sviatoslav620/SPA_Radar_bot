@@ -1,19 +1,26 @@
 #!/bin/bash
 
+# Оновлення списку пакетів
+apt-get update 
+
 # Встановлення необхідних утиліт
+apt-get install -y wget unzip
+
+# Завантаження та встановлення Google Chrome
 wget -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-mkdir -p /tmp/chrome
-dpkg-deb -x /tmp/chrome.deb /tmp/chrome
-export PATH="/tmp/chrome/usr/bin:$PATH"
+dpkg -i /tmp/chrome.deb || apt-get install -f -y
+rm /tmp/chrome.deb
 
 # Завантаження ChromeDriver
 CHROMEDRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE)
 wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
 
-# Розпакування ChromeDriver
-unzip /tmp/chromedriver.zip -d /tmp/
-chmod +x /tmp/chromedriver
-export PATH="/tmp:$PATH"
+# Розпакування ChromeDriver у робочу папку
+unzip /tmp/chromedriver.zip -d /usr/local/bin/
+rm /tmp/chromedriver.zip
+
+# Надаємо права на виконання
+chmod +x /usr/local/bin/chromedriver
 
 # Запуск бота
 python bot.py
