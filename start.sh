@@ -9,23 +9,26 @@ wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stab
 dpkg -i /tmp/chrome.deb || apt-get -f install -y
 rm /tmp/chrome.deb
 
-# Отримання версії ChromeDriver, яка відповідає встановленому Chrome
-echo "📥 Завантаження ChromeDriver..."
+# Отримання версії Chrome
 CHROME_VERSION=$(google-chrome --version | awk '{print $3}')
+echo "🚀 Встановлена версія Chrome: $CHROME_VERSION"
+
+# Завантаження відповідного ChromeDriver
+echo "📥 Завантаження ChromeDriver..."
 CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
 wget -q -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip
 
-# Розпакування ChromeDriver у робочу папку
-unzip /tmp/chromedriver.zip -d /usr/local/bin/
+# Розпакування ChromeDriver у кореневу папку проекту
+unzip /tmp/chromedriver.zip -d /opt/render/project/src/
 rm /tmp/chromedriver.zip
 
 # Надаємо права на виконання
-chmod +x /usr/local/bin/chromedriver
+chmod +x /opt/render/project/src/chromedriver
 
 # Перевірка встановлення
 echo "✅ Перевірка встановлення:"
 google-chrome --version
-chromedriver --version
+/opt/render/project/src/chromedriver --version
 
 # Запуск бота
 echo "🚀 Запуск бота..."
