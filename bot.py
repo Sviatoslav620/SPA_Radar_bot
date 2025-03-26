@@ -6,10 +6,8 @@ import random
 import telebot
 from flask import Flask, request
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 # Логування для налагодження
 logging.basicConfig(level=logging.INFO)
@@ -51,14 +49,13 @@ def save_users(users):
 
 users = load_users()
 
-# Налаштування Selenium (під Firefox)
-firefox_options = Options()
+# Налаштування Selenium з Firefox
+firefox_options = FirefoxOptions()
 firefox_options.add_argument("--headless")
 firefox_options.add_argument("--no-sandbox")
-firefox_options.add_argument("--disable-dev-shm-usage")  # Мінімізація використання RAM
-firefox_options.binary_location = "/tmp/firefox/firefox/firefox"  # Шлях до Firefox
+firefox_options.add_argument("--disable-dev-shm-usage")
 
-service = Service("/tmp/firefox/geckodriver")  # Geckodriver у тій самій папці
+service = FirefoxService("/opt/firefox/geckodriver")
 driver = webdriver.Firefox(service=service, options=firefox_options)
 
 # Маршрути Flask
@@ -122,3 +119,4 @@ def check_new_posts():
 # Запуск сервера
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
+    
