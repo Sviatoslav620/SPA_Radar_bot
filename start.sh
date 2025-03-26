@@ -1,38 +1,29 @@
 #!/bin/bash
 
 # Оновлення списку пакетів
-apt-get update 
+apt-get update
 
-# Встановлення необхідних утиліт
-apt-get install -y wget unzip curl 
+# Завантаження та встановлення Firefox у доступну папку
+mkdir -p /tmp/firefox
+wget -O /tmp/firefox.tar.bz2 "https://download.mozilla.org/?product=firefox-latest&os=linux64&lang=en-US"
+tar xjf /tmp/firefox.tar.bz2 -C /tmp/firefox
+rm /tmp/firefox.tar.bz2
+export PATH="/tmp/firefox/firefox/:$PATH"
 
-# Завантаження та встановлення Google Chrome
-wget -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-dpkg -i /tmp/chrome.deb || apt-get install -f -y
-rm /tmp/chrome.deb
+# Завантаження та встановлення Geckodriver
+GECKODRIVER_VERSION=$(curl -sS https://github.com/mozilla/geckodriver/releases/latest | grep -oP 'v\d+\.\d+\.\d+')
+wget -O /tmp/geckodriver.tar.gz "https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_VERSION/geckodriver-linux64.tar.gz"
+tar -xzf /tmp/geckodriver.tar.gz -C /tmp/firefox/
+rm /tmp/geckodriver.tar.gz
+chmod +x /tmp/firefox/geckodriver
+export PATH="/tmp/firefox/:$PATH"
 
-# Перевірка встановлення Google Chrome
-if [ ! -f "/usr/bin/google-chrome" ]; then
-    echo "❌ ПОМИЛКА: Google Chrome не встановлено!"
-    exit 1
-fi
+# Логування версій для перевірки
+echo "Firefox version:"
+/tmp/firefox/firefox --version
 
-# Завантаження ChromeDriver
-CHROMEDRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
-wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
-
-# Розпакування ChromeDriver у робочу папку
-unzip /tmp/chromedriver.zip -d /usr/local/bin/
-rm /tmp/chromedriver.zip
-
-# Перевірка встановлення ChromeDriver
-if [ ! -f "/usr/local/bin/chromedriver" ]; then
-    echo "❌ ПОМИЛКА: ChromeDriver не встановлено!"
-    exit 1
-fi
-
-# Надаємо права на виконання
-chmod +x /usr/local/bin/chromedriver
+echo "Geckodriver version:"
+/tmp/firefox/geckodriver --version
 
 # Запуск бота
 python bot.py
